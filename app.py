@@ -1,9 +1,26 @@
 from flask import Flask, render_template, url_for, flash, redirect
 from forms import RegistrationForm, LoginForm
+import db
+from datetime import datetime
 
 app = Flask(__name__)
 
 app.config['SECRET_KEY'] = 'ae4a5462339fad4e4924c778ec41cd07'
+
+class User:
+    def __init__(self, username, email, password, image_file = 'default.jpg', posts = None):
+        self.username = username
+        self.email = email
+        self.image_file = image_file
+        self.password = password
+        self.posts = posts
+
+class Post:
+    def __init__(self, title, content, user_id, date_posted = datetime.utcnow):
+        self.title = title
+        self.date_posted = date_posted
+        self.content = content
+        self.user_id = user_id
 
 posts = [{
     'author': 'Praneet Bomma',
