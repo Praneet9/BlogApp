@@ -1,26 +1,7 @@
-from flask import Flask, render_template, url_for, flash, redirect
-from forms import RegistrationForm, LoginForm
-import db
-from datetime import datetime
-
-app = Flask(__name__)
-
-app.config['SECRET_KEY'] = 'ae4a5462339fad4e4924c778ec41cd07'
-
-class User:
-    def __init__(self, username, email, password, image_file = 'default.jpg', posts = None):
-        self.username = username
-        self.email = email
-        self.image_file = image_file
-        self.password = password
-        self.posts = posts
-
-class Post:
-    def __init__(self, title, content, user_id, date_posted = datetime.utcnow):
-        self.title = title
-        self.date_posted = date_posted
-        self.content = content
-        self.user_id = user_id
+from flask import render_template, url_for, flash, redirect
+from flaskblog import app
+from flaskblog.models import User, Post
+from flaskblog.forms import RegistrationForm, LoginForm
 
 posts = [{
     'author': 'Praneet Bomma',
@@ -67,6 +48,3 @@ def login():
             flash('Login Unsuccessful, Please check username and password', 'danger')
     return render_template('login.html', title='Login', form = form)
 
-
-if __name__ == '__main__':
-    app.run(debug=True)
