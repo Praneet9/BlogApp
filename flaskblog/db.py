@@ -1,11 +1,22 @@
 from pymongo import MongoClient
 
+def register_user(User):
+    client = getConnection()
+    db = getDB(client)
+    collection = getCollection('users', db)
+    data = {'username': User.username,
+            'email': User.email,
+            'password': User.password,
+            'posts': User.posts,
+            'image_file': User.image_file}
+    collection.insert_one(data)
+
 def getConnection():
     client = MongoClient('localhost:27017')
     return client
 
 def getDB(client):
-    db = client.DocScanner
+    db = client.FlaskBlog
     return db
 
 def getCollection(collection_name, db):
