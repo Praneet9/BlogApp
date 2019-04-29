@@ -50,8 +50,6 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     try:
-        print("In login try")
-        print(current_user)
         if current_user.is_authenticated:
             return redirect(url_for('home'))
     except:
@@ -60,13 +58,10 @@ def login():
     if form.validate_on_submit():
         user = check_user(form.email.data)
         user_model = User_Model(user)
-        print("In login if")
-        print(user_model)
         if user and bcrypt.check_password_hash(user['password'], form.password.data):
             login_user(user_model)
-            return redirect(url_for('home'))
-            # next_page = request.args.get('next')
-            # return redirect(next_page) if next_page else redirect(url_for('home'))
+            next_page = request.args.get('next')
+            return redirect(next_page) if next_page else redirect(url_for('home'))
         else:
             flash('Login Unsuccessful, Please check email and password', 'danger')
     return render_template('login.html', title='Login', form = form)
