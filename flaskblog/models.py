@@ -35,14 +35,16 @@ class User_Model():
         # UserMixin.__setattr__('is_authenticated', True)
         self.username = user['username']
         self.id = str(user['_id'])
+        self.email = user['email']
+        self.image_file = user['image_file']
         try:
-            self.is_authenticated = user['is_authenticated']
+            self.is_authenticated = True
             self.is_active = True
-            # self.is_anonymouse = False
-        except:
+            self.is_anonymouse = False
+        except Exception as e:
             self.is_authenticated = False
             self.is_active = False
-            # self.is_authenticated = True
+            self.is_anonymouse = True
     
     def get_id(self):
         return self.id
