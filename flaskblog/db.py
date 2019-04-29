@@ -22,6 +22,10 @@ def get_user(user_id):
     results = user_collection.find_one({'_id': ObjectId(user_id)})
     return results
 
+def updateAccount(old, new):
+    new = {'$set': new}
+    user_collection.update_one(old, new)
+
 def _getConnection():
     client = MongoClient('localhost:27017')
     return client
