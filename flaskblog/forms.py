@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
 from flask_login import current_user
-from wtforms import StringField, PasswordField, SubmitField, BooleanField
+from wtforms import StringField, PasswordField, SubmitField, BooleanField, TextAreaField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from flaskblog.models import User
 from flaskblog.db import validate
@@ -48,10 +48,16 @@ class UpdateAccountForm(FlaskForm):
             result = validate('username', username.data)
             if result:
                 raise ValidationError('That username is already taken. Please choose a new one!')
-    
+
     def validate_email(self, email):
         print(email.data, current_user.email)
         if email.data != current_user.email:
             result = validate('email', email.data)
             if result:
                 raise ValidationError('That email is already registered. Please login!')
+
+
+class PostForm(FlaskForm):
+    title = StringField('Title', validators=[DataRequired()])
+    content = TextAreaField('Content', validators=[DataRequired()])
+    submit = SubmitField()

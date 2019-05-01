@@ -20,11 +20,14 @@ class User():
         self.posts = posts
 
 class Post:
-    def __init__(self, title, content, user_id, date_posted = datetime.utcnow):
+    def __init__(self, title, content, date_posted = datetime.utcnow().strftime('%Y-%m-%d')):
         self.title = title
         self.date_posted = date_posted
         self.content = content
-        self.user_id = user_id
+        self.author = current_user.username
+        self.image_file = current_user.image_file
+        self.email = current_user.email
+        self.user_id = current_user.id
 
     def __repr__(self):
         return "Post('"+self.title+"', '"+self.date_posted+"')"
@@ -37,14 +40,9 @@ class User_Model():
         self.id = str(user['_id'])
         self.email = user['email']
         self.image_file = user['image_file']
-        try:
-            self.is_authenticated = True
-            self.is_active = True
-            self.is_anonymouse = False
-        except Exception as e:
-            self.is_authenticated = False
-            self.is_active = False
-            self.is_anonymouse = True
+        self.is_authenticated = True
+        self.is_active = True
+        self.is_anonymouse = False
     
     def get_id(self):
         return self.id

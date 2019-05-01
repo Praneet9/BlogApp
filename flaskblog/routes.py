@@ -3,27 +3,28 @@ from PIL import Image
 from flask import render_template, url_for, flash, redirect, request
 from flaskblog import app, bcrypt
 from flaskblog.models import User, Post, User_Model
-from flaskblog.forms import RegistrationForm, LoginForm, UpdateAccountForm
-from flaskblog.db import register_user, check_user, updateAccount
+from flaskblog.forms import RegistrationForm, LoginForm, UpdateAccountForm, PostForm
+from flaskblog.db import register_user, check_user, updateAccount, newPost, getPosts
 from flask_login import login_user, current_user, logout_user, login_required
 
-posts = [{
-    'author': 'Praneet Bomma',
-    'title': 'First Post',
-    'date_posted': 'April 8, 2019',
-    'content': 'This is my first post'
-},
-         {
-             'author': 'Jane Doe',
-             'title': 'Second Post',
-             'date_posted': 'April 9, 2019',
-             'content': 'This is the second post'
-         }]
+# posts = [{
+#     'author': 'Praneet Bomma',
+#     'title': 'First Post',
+#     'date_posted': 'April 8, 2019',
+#     'content': 'This is my first post'
+# },
+#          {
+#              'author': 'Jane Doe',
+#              'title': 'Second Post',
+#              'date_posted': 'April 9, 2019',
+#              'content': 'This is the second post'
+#          }]
 
 
 @app.route('/')
 @app.route('/home')
 def home():
+    posts = getPosts()
     return render_template('home.html', posts=posts)
 
 
@@ -104,6 +105,8 @@ def account():
     if form.validate_on_submit():
         if form.picture.data:
             picture_file = save_picture(form.picture.data)
+        else:
+            picture_file = current_user.image_file
         old = {'username': current_user.username,
                'email': current_user.email,
                'image_file': current_user.image_file}
@@ -124,3 +127,17 @@ def account():
         'static', filename='profile_pics/' + current_user.image_file)
     return render_template(
         'account.html', title='Account', image_file=image_file, form=form)
+
+
+
+@app.route('/post/new', methods=['GET', 'POST'])
+@login_required
+def new_post():
+    form = PostForm()
+    if form.validate_on_submit():
+        post = Post(title = form.title.data, content = form.content.data)
+        newPost(post)
+        flash('Your post has been created!', 'success')
+        return redirect(url_for('home'))
+    return render_template(
+        'create_post.html', title='New Post', form = form)

@@ -26,6 +26,20 @@ def updateAccount(old, new):
     new = {'$set': new}
     user_collection.update_one(old, new)
 
+def newPost(Post):
+    data = {'title': Post.title,
+            'date_posted': Post.date_posted,
+            'content': Post.content,
+            'author': Post.author,
+            'email': Post.email,
+            'image_file': Post.image_file,
+            'user_id': Post.user_id}
+    post_collection.insert_one(data)
+
+def getPosts():
+    posts = post_collection.find()
+    return posts
+
 def _getConnection():
     client = MongoClient('localhost:27017')
     return client
