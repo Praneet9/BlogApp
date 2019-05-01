@@ -34,11 +34,17 @@ def newPost(Post):
             'email': Post.email,
             'image_file': Post.image_file,
             'user_id': Post.user_id}
-    post_collection.insert_one(data)
+    return post_collection.insert_one(data)
 
-def getPosts():
+def fetchPosts():
     posts = post_collection.find()
     return posts
+
+def getPost(post_id):
+    try:
+        return post_collection.find_one({'_id': ObjectId(post_id)})
+    except:
+        return False
 
 def _getConnection():
     client = MongoClient('localhost:27017')

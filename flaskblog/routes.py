@@ -1,10 +1,10 @@
 import os
 from PIL import Image
-from flask import render_template, url_for, flash, redirect, request
+from flask import render_template, url_for, flash, redirect, request, abort
 from flaskblog import app, bcrypt
 from flaskblog.models import User, Post, User_Model
 from flaskblog.forms import RegistrationForm, LoginForm, UpdateAccountForm, PostForm
-from flaskblog.db import register_user, check_user, updateAccount, newPost, getPosts
+from flaskblog.db import register_user, check_user, updateAccount, newPost, fetchPosts, getPost
 from flask_login import login_user, current_user, logout_user, login_required
 
 # posts = [{
@@ -24,7 +24,7 @@ from flask_login import login_user, current_user, logout_user, login_required
 @app.route('/')
 @app.route('/home')
 def home():
-    posts = getPosts()
+    posts = fetchPosts()
     return render_template('home.html', posts=posts)
 
 
@@ -141,3 +141,10 @@ def new_post():
         return redirect(url_for('home'))
     return render_template(
         'create_post.html', title='New Post', form = form)
+
+@app.route('/post/<post_id>')
+def post(post_id):
+    post = getPost(post_id)
+    if not post:
+        abort(404)
+    return render_template('post.html', title = post['title'], post = post)
