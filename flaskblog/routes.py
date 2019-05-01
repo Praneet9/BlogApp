@@ -4,21 +4,8 @@ from flask import render_template, url_for, flash, redirect, request, abort
 from flaskblog import app, bcrypt
 from flaskblog.models import User, Post, User_Model
 from flaskblog.forms import RegistrationForm, LoginForm, UpdateAccountForm, PostForm
-from flaskblog.db import register_user, check_user, updateAccount, newPost, fetchPosts, getPost
+from flaskblog.db import register_user, check_user, updateAccount, newPost, fetchPosts, getPost, updatePost, deletePost
 from flask_login import login_user, current_user, logout_user, login_required
-
-# posts = [{
-#     'author': 'Praneet Bomma',
-#     'title': 'First Post',
-#     'date_posted': 'April 8, 2019',
-#     'content': 'This is my first post'
-# },
-#          {
-#              'author': 'Jane Doe',
-#              'title': 'Second Post',
-#              'date_posted': 'April 9, 2019',
-#              'content': 'This is the second post'
-#          }]
 
 
 @app.route('/')
@@ -88,7 +75,8 @@ def save_picture(form_picture):
     random_hex = os.urandom(8).hex()
     _, f_ext = os.path.splitext(form_picture.filename)
     picture_fn = random_hex + f_ext
-    picture_path = os.path.join(app.root_path, 'static/profile_pics', picture_fn)
+    picture_path = os.path.join(app.root_path, 'static/profile_pics',
+                                picture_fn)
 
     output_size = (125, 125)
     i = Image.open(form_picture)
@@ -107,17 +95,21 @@ def account():
             picture_file = save_picture(form.picture.data)
         else:
             picture_file = current_user.image_file
-        old = {'username': current_user.username,
-               'email': current_user.email,
-               'image_file': current_user.image_file}
-        new = {'username': form.username.data,
-               'email': form.email.data,
-               'image_file': picture_file}
+        old = {
+            'username': current_user.username,
+            'email': current_user.email,
+            'image_file': current_user.image_file
+        }
+        new = {
+            'username': form.username.data,
+            'email': form.email.data,
+            'image_file': picture_file
+        }
         updateAccount(old, new)
         current_user.image_file = picture_file
         current_user.username = form.username.data
         current_user.email = form.email.data
-        
+
         flash("Your account has been updated!", 'success')
         return redirect(url_for('account'))
     elif request.method == 'GET':
@@ -129,22 +121,60 @@ def account():
         'account.html', title='Account', image_file=image_file, form=form)
 
 
-
 @app.route('/post/new', methods=['GET', 'POST'])
 @login_required
 def new_post():
     form = PostForm()
     if form.validate_on_submit():
-        post = Post(title = form.title.data, content = form.content.data)
+        post = Post(title=form.title.data, content=form.content.data)
         newPost(post)
         flash('Your post has been created!', 'success')
         return redirect(url_for('home'))
     return render_template(
-        'create_post.html', title='New Post', form = form)
+        'create_post.html', title='New Post', form=form, legend='New Post')
+
 
 @app.route('/post/<post_id>')
 def post(post_id):
     post = getPost(post_id)
     if not post:
         abort(404)
-    return render_template('post.html', title = post['title'], post = post)
+    return render_template('post.html', title=post['title'], post=post)
+
+
+@app.route('/post/<post_id>/update', methods=['GET', 'POST'])
+@login_required
+def update_post(post_id):
+    post = getPost(post_id)
+    if not post:
+        abort(404)
+    if post['author'] != current_user.username:
+        abort(403)
+    form = PostForm()
+    if form.validate_on_submit():
+        post['title'] = form.title.data
+        post['content'] = form.content.data
+        updatePost(post_id=post_id, updated_post=post)
+        flash('Your post has been updated!', 'success')
+        return redirect(url_for('post', post_id=post['_id']))
+    elif request.method == 'GET':
+        form.title.data = post['title']
+        form.content.data = post['content']
+    return render_template(
+        'create_post.html',
+        title='Update Post',
+        form=form,
+        legend='Update Post')
+
+
+@app.route('/post/<post_id>/delete', methods=['POST'])
+@login_required
+def delete_post(post_id):
+    post = getPost(post_id)
+    if not post:
+        abort(404)
+    if post['author'] != current_user.username:
+        abort(403)
+    deletePost(post_id)
+    flash('Your post has been deleted!', 'success')
+    return redirect(url_for('home'))
