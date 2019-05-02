@@ -46,9 +46,18 @@ def newPost(Post):
     return post_collection.insert_one(data)
 
 
-def fetchPosts():
-    posts = post_collection.find()
+def fetchPosts(page, total_cards):
+    skip_val = (page - 1) * total_cards
+    posts = post_collection.find().sort("_id", -1).skip(skip_val).limit(5)
     return posts
+
+
+def fetchUserPosts(username, page, total_cards):
+    try:
+        skip_val = (page - 1) * total_cards
+        return post_collection.find({'author': username}).sort("_id", -1).skip(skip_val).limit(5)
+    except:
+        return False
 
 
 def getPost(post_id):

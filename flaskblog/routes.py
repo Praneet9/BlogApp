@@ -4,15 +4,35 @@ from flask import render_template, url_for, flash, redirect, request, abort
 from flaskblog import app, bcrypt
 from flaskblog.models import User, Post, User_Model
 from flaskblog.forms import RegistrationForm, LoginForm, UpdateAccountForm, PostForm
-from flaskblog.db import register_user, check_user, updateAccount, newPost, fetchPosts, getPost, updatePost, deletePost
+from flaskblog.db import register_user, check_user, updateAccount, newPost, fetchPosts, getPost, updatePost, deletePost, fetchUserPosts
 from flask_login import login_user, current_user, logout_user, login_required
+import math
 
+def iter_pages(pages, page, left_edge=1, left_current=1,
+                   right_current=2, right_edge=1):
+    last = 0
+    for num in range(1, pages + 1):
+        if num <= left_edge or \
+            (num > page - left_current - 1 and \
+            num < page + right_current) or \
+            num > pages - right_edge:
+            if last + 1 != num:
+                yield None
+            yield num
+            last = num
 
 @app.route('/')
 @app.route('/home')
 def home():
-    posts = fetchPosts()
-    return render_template('home.html', posts=posts)
+    total_cards = 5
+    page = request.args.get('page', 1, type=int)
+    posts = fetchPosts(page = page, total_cards = total_cards)
+    if (page - 1) * total_cards >= posts.count():
+        abort(404)
+    else:
+        n_pages = math.ceil(posts.count() / total_cards)
+        pagination = list(iter_pages(pages=n_pages, page=page))
+        return render_template('home.html', posts=posts, pagination = pagination, page = page)
 
 
 @app.route('/about')
@@ -178,3 +198,16 @@ def delete_post(post_id):
     deletePost(post_id)
     flash('Your post has been deleted!', 'success')
     return redirect(url_for('home'))
+
+
+@app.route('/user/<string:username>')
+def user_posts(username):
+    total_cards = 5
+    page = request.args.get('page', 1, type=int)
+    posts = fetchUserPosts(username = username, page = page, total_cards = total_cards)
+    if not posts or posts.count() == 0:
+        abort(404)
+    else:
+        n_pages = math.ceil(posts.count() / total_cards)
+        pagination = list(iter_pages(pages=n_pages, page=page))
+        return render_template('user_posts.html', posts=posts, pagination = pagination, page = page, user = username)
