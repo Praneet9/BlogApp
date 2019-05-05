@@ -20,6 +20,7 @@ def check_user(email):
 
 def validate(key, value):
     results = user_collection.find_one({key: value})
+    print(results)
     return results
 
 
@@ -29,6 +30,11 @@ def get_user(user_id):
 
 
 def updateAccount(old, new):
+    new = {'$set': new}
+    user_collection.update_one(old, new)
+
+
+def updatePassword(old, new):
     new = {'$set': new}
     user_collection.update_one(old, new)
 
@@ -55,7 +61,9 @@ def fetchPosts(page, total_cards):
 def fetchUserPosts(username, page, total_cards):
     try:
         skip_val = (page - 1) * total_cards
-        return post_collection.find({'author': username}).sort("_id", -1).skip(skip_val).limit(5)
+        return post_collection.find({
+            'author': username
+        }).sort("_id", -1).skip(skip_val).limit(5)
     except:
         return False
 

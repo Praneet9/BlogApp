@@ -1,15 +1,21 @@
 import os
 from PIL import Image
 from flask import render_template, url_for, flash, redirect, request, abort
-from flaskblog import app, bcrypt
+from flaskblog import app, bcrypt, mail
 from flaskblog.models import User, Post, User_Model
-from flaskblog.forms import RegistrationForm, LoginForm, UpdateAccountForm, PostForm
-from flaskblog.db import register_user, check_user, updateAccount, newPost, fetchPosts, getPost, updatePost, deletePost, fetchUserPosts
+from flaskblog.forms import RegistrationForm, LoginForm, UpdateAccountForm, PostForm, RequestResetForm, ResetPasswordForm
+from flaskblog.db import register_user, check_user, updateAccount, newPost, fetchPosts, getPost, updatePost, deletePost, fetchUserPosts, updatePassword
 from flask_login import login_user, current_user, logout_user, login_required
 import math
+from flask_mail import Message
 
-def iter_pages(pages, page, left_edge=1, left_current=1,
-                   right_current=2, right_edge=1):
+
+def iter_pages(pages,
+               page,
+               left_edge=1,
+               left_current=1,
+               right_current=2,
+               right_edge=1):
     last = 0
     for num in range(1, pages + 1):
         if num <= left_edge or \
@@ -21,18 +27,20 @@ def iter_pages(pages, page, left_edge=1, left_current=1,
             yield num
             last = num
 
+
 @app.route('/')
 @app.route('/home')
 def home():
     total_cards = 5
     page = request.args.get('page', 1, type=int)
-    posts = fetchPosts(page = page, total_cards = total_cards)
+    posts = fetchPosts(page=page, total_cards=total_cards)
     if (page - 1) * total_cards >= posts.count():
         abort(404)
     else:
         n_pages = math.ceil(posts.count() / total_cards)
         pagination = list(iter_pages(pages=n_pages, page=page))
-        return render_template('home.html', posts=posts, pagination = pagination, page = page)
+        return render_template(
+            'home.html', posts=posts, pagination=pagination, page=page)
 
 
 @app.route('/about')
@@ -204,10 +212,82 @@ def delete_post(post_id):
 def user_posts(username):
     total_cards = 5
     page = request.args.get('page', 1, type=int)
-    posts = fetchUserPosts(username = username, page = page, total_cards = total_cards)
+    posts = fetchUserPosts(
+        username=username, page=page, total_cards=total_cards)
     if not posts or posts.count() == 0:
         abort(404)
     else:
         n_pages = math.ceil(posts.count() / total_cards)
         pagination = list(iter_pages(pages=n_pages, page=page))
-        return render_template('user_posts.html', posts=posts, pagination = pagination, page = page, user = username)
+        return render_template(
+            'user_posts.html',
+            posts=posts,
+            pagination=pagination,
+            page=page,
+            user=username)
+
+
+def send_reset_email(user):
+    token = user.get_reset_token()
+    print(user.email)
+    msg = Message(
+        'Password Reset Request',
+        sender='noreply@demo.com',
+        recipients=[user.email])
+    msg.body = '''To reset your password, visit the following link: ''' + url_for(
+        'reset_token', token=token, _external=True) + '''\n
+        If you did not make this request then simply ingore this email and no changes will be made.
+        '''
+    mail.send(msg)
+
+
+@app.route('/reset_password', methods=['GET', 'POST'])
+def reset_request():
+    try:
+        if current_user.is_authenticated:
+            return redirect(url_for('home'))
+    except:
+        pass
+    form = RequestResetForm()
+    if form.validate_on_submit():
+        user = check_user(form.email.data)
+        user_model = User_Model(user)
+        send_reset_email(user_model)
+        flash(
+            'An email has been sent with instructions to reset your password',
+            'info')
+        return redirect(url_for('login'))
+    return render_template(
+        'reset_request.html', title='Reset Password', form=form)
+
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_token(token):
+    try:
+        if current_user.is_authenticated:
+            return redirect(url_for('home'))
+    except:
+        pass
+    user = User_Model.verify_reset_token(token)
+    if user is None:
+        flash('That is an invalid or expired token', 'warning')
+        return redirect(url_for('reset_request'))
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        hashed_password = bcrypt.generate_password_hash(
+            form.password.data).decode('utf-8')
+        old = {
+            'username': user.username,
+            'email': user.email,
+        }
+        new = {
+            'username': user.username,
+            'email': user.email,
+            'password': hashed_password
+        }
+        updatePassword(old, new)
+        flash('Your password has been updated! You are now able to log in',
+              'success')
+        return redirect(url_for('login'))
+    return render_template(
+        'reset_token.html', title='Reset Password', form=form)

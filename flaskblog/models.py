@@ -1,6 +1,7 @@
 from datetime import datetime
-from flaskblog import login_manager
+from flaskblog import login_manager, app
 from flaskblog.db import get_user
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask_login import UserMixin, current_user
 
 
@@ -55,3 +56,18 @@ class User_Model():
 
     def get_id(self):
         return self.id
+
+    def get_reset_token(self, expires_sec = 1800):
+        s = Serializer(app.config['SECRET_KEY'], expires_sec)
+        return s.dumps({'user_id': self.id}).decode('utf-8')
+
+    @staticmethod
+    def verify_reset_token(token):
+        s = Serializer(app.config['SECRET_KEY'])
+        try:
+            user_id = s.loads(token)['user_id']
+        except:
+            return None
+        user = get_user(user_id)
+        user['is_authenticated'] = True
+        return User_Model(user)

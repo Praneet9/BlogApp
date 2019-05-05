@@ -48,7 +48,6 @@ class UpdateAccountForm(FlaskForm):
     submit = SubmitField('Update')
 
     def validate_username(self, username):
-        print(username.data, current_user.username)
         if username.data != current_user.username:
             result = validate('username', username.data)
             if result:
@@ -56,7 +55,6 @@ class UpdateAccountForm(FlaskForm):
                     'That username is already taken. Please choose a new one!')
 
     def validate_email(self, email):
-        print(email.data, current_user.email)
         if email.data != current_user.email:
             result = validate('email', email.data)
             if result:
@@ -68,3 +66,23 @@ class PostForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired()])
     content = TextAreaField('Content', validators=[DataRequired()])
     submit = SubmitField()
+
+
+class RequestResetForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Request Reset Password')
+
+    def validate_email(self, email):
+        result = validate('email', email.data)
+        if result is None:
+            raise ValidationError(
+                'There is no account with that email. You must register first!'
+            )
+
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField('Password', validators=[DataRequired()])
+    confirm_password = PasswordField(
+        'Confirm Password', validators=[DataRequired(),
+                                        EqualTo('password')])
+    submit = SubmitField('Reset Password')
