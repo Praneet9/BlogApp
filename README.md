@@ -1,1 +1,1 @@
-# Flask_BlogApp
+# BlogApp in Flask and Django
